@@ -136,7 +136,7 @@ def detect_white_paper(image_path):
             img = draw_accurate_center(img, sorted_pts)
             break
     
-    show_scaled(img, 0.2)
+    show_scaled(img, 0.4)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
 
