@@ -45,7 +45,7 @@ def detect_circles(frame):  # 检测圆形
 
 # ---------------------- 主程序 ----------------------
 if __name__ == "__main__":  # 主程序入口
-    cap = cv2.VideoCapture(0)  # 打开摄像头
+    cap = cv2.VideoCapture(1)  # 打开摄像头
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)  # 设置帧宽度
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)  # 设置帧高度
 
