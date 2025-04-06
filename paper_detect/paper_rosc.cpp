@@ -8,7 +8,10 @@
 #include <deque>
 #include <vector>
 #include <cmath>
+#include <my_opencv_pkg/square_center.h>
+#include <my_opencv_pkg/detector_bool.h>
 
+my_opencv_pkg::detector_bool::ConstPtr detect_flag;  // 全局变量，用于存储检测标志`
 // 将四个顶点排序为[左上, 右上, 右下, 左下]
 std::vector<cv::Point> order_points(const std::vector<cv::Point>& pts) {
     std::vector<cv::Point> rect(4);
@@ -59,7 +62,9 @@ public:
             return {};
         }
 
-        cv::Point2f avg_center = cv::mean(centers);
+        // 计算中心点的均值
+        cv::Scalar avg_center_scalar = cv::mean(centers);
+        cv::Point2f avg_center(avg_center_scalar[0], avg_center_scalar[1]);
 
         float min_distance = std::numeric_limits<float>::max();
         std::vector<cv::Point> best_match;
@@ -83,7 +88,7 @@ private:
     float stability_threshold;
 };
 
-void imageCallback(const sensor_msgs::ImageConstPtr& msg, PaperTracker& tracker) {
+void imageCallback(const sensor_msgs::ImageConstPtr& msg, PaperTracker& tracker, ros::Publisher& center_pub) {
     try {
         cv_bridge::CvImagePtr cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
         cv::Mat frame = cv_ptr->image;
@@ -150,6 +155,12 @@ void imageCallback(const sensor_msgs::ImageConstPtr& msg, PaperTracker& tracker)
 
             // 绘制中心红点
             cv::circle(frame, cv::Point(x, y), 8, cv::Scalar(0, 0, 255), -1);
+
+            // 发布中心点坐标
+            my_opencv_pkg::square_center center_msg;
+            center_msg.x = x;
+            center_msg.y = y;
+            center_pub.publish(center_msg);
         }
 
         if (!paper_contour.empty()) {
@@ -163,6 +174,9 @@ void imageCallback(const sensor_msgs::ImageConstPtr& msg, PaperTracker& tracker)
         ROS_ERROR("cv_bridge exception: %s", e.what());
     }
 }
+void detector_bool_cb(const my_opencv_pkg::detector_bool::ConstPtr& msg) {
+    detect_flag = msg;
+}
 
 int main(int argc, char** argv) {
     ros::init(argc, argv, "paper_detect");
@@ -171,7 +185,26 @@ int main(int argc, char** argv) {
     image_transport::ImageTransport it(nh);
     PaperTracker tracker;
 
-    image_transport::Subscriber sub = it.subscribe("/usb_cam/image_raw", 1, boost::bind(imageCallback, _1, boost::ref(tracker)));
+    // 创建发布者，发布中心点坐标
+    ros::Subscriber detect_sub = nh.subscribe("my_opencv_pkg/detector_bool", 10, detector_bool_cb
+    );
+    ros::Publisher center_pub = nh.advertise<my_opencv_pkg::square_center>("my_opencv_pkg/square_center", 10);
+
+    while (ros::ok())
+    {
+        ros::spinOnce();  // 处理ROS消息
+        // 等待订阅者连接
+        std::cout << "Waiting for subscribers..." << std::endl;
+        std::cout << "detect_flag: " << detect_flag->detect << std::endl;
+        if (detect_flag->detect)
+        {
+            break;  // 如果检测到目标，跳出循环
+        }
+        ros::Duration(0.1).sleep();  // 等待一段时间
+    }
+    
+    // 订阅图像话题，并将发布者作为参数传递给回调函数
+    image_transport::Subscriber sub = it.subscribe("/usb_cam/image_raw", 1, boost::bind(imageCallback, _1, boost::ref(tracker), boost::ref(center_pub)));
 
     ros::spin();
     return 0;
