@@ -195,10 +195,13 @@ int main(int argc, char** argv) {
         ros::spinOnce();  // 处理ROS消息
         // 等待订阅者连接
         std::cout << "Waiting for subscribers..." << std::endl;
-        std::cout << "detect_flag: " << detect_flag->detect << std::endl;
         if (detect_flag->detect)
         {
+            cout << "Detecting..." << endl;
             break;  // 如果检测到目标，跳出循环
+        }else
+        {
+            cout << "Waiting for detection..." << endl;
         }
         ros::Duration(0.1).sleep();  // 等待一段时间
     }
