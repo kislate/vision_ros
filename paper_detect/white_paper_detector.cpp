@@ -33,7 +33,7 @@ std::vector<cv::Point> order_points(const std::vector<cv::Point>& pts) {
 
 class PaperTracker {
 public:
-    PaperTracker(int history_sec = 5) : history(history_sec * 25), stability_threshold(0.75) {}
+    PaperTracker(int history_sec = 2) : history(history_sec * 25), stability_threshold(0.75) {}
 
     cv::Moments extract_features(const std::vector<cv::Point>& cnt) {
         return cv::moments(cnt);
