@@ -1,0 +1,5 @@
+<launch>
+	<node pkg="my_opencv_pkg" type="white_paper_detector" name="white_paper_detector" output="screen">
+            <!--    <rosparam command="load" file="$(find my_opencv_pkg)/config/white_paper_detector.yaml" /> -->
+	</node>
+</launch>
